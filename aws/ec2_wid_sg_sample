@@ -1,0 +1,111 @@
+
+
+resource "aws_key_pair" "j4utech" {
+  key_name   = "j4utech-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCp8MbpMcstHIHNExlmDs4fKqis/02T7yiXQ0n67DABXQnFx1ut9fSOBhAt7l6A829Oxxl+k/ITFUaccga7h0DkIGoweT6RZ2AKhQOGqFLo/SJPGOYmdiHuvtzbwiXF1zx8Ss7BEWaqB0FX45nIQc17zaF8/CjSI/CUZIwXAH39e0D8YxNi/Ze1BygQuVl4YWgha4ZtchnPKiEXYYa8hGKnbgd7Km+cK8eTkW16MJb35e7LOG+YOqCGn3K/UNzLNOJe2y5tJl2b68UTEOZROQL54ROtvgr7MPDalWit2AS80VjJvJ8ZYOcW/JTWxvGiyAnxKny6sEQFWuKtyE1Q+Ko0q9V5vZyPcJSshKx+m0PdG9d9RQHWKwQiKniWz97aX2or5D+uouPHg8wip4cdL7kQKjU4yJzAW55oJnlD9MgrX3si5183PRsSctgl2Cuid9z4VwpMLJRnzpFOYhWxABibD/lSvaBCXlbF0RSNMqVC1UFZaNNzq7/6Qfd011eIwXk= root@ip-172-31-3-122"
+  tags = {
+    Name = "j4u.tech-key"
+	}
+	}
+	
+resource "aws_instance" "New" {
+    
+  ami                            = "ami-0a0ad6b70e61be944"
+  instance_type                  = "t2.micro"
+  associate_public_ip_address    = true
+  vpc_security_group_ids         = [ "sg-0ca79e4668bed6f95" ] 
+  user_data                      = file("site.sh") # file function
+  key_name                       = aws_key_pair.j4utech.id
+  tags = {
+    Name = "New_Server"
+  } 
+    
+}
+
+output "New-pulic-ip" {
+    
+    value = aws_instance.New.public_ip
+}
+
+
+
+resource "aws_security_group" "webserver" {
+    
+    
+  name        = "webserver"
+  description = "allow 80,443 only"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0"]
+  }
+  
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0"]
+  }
+
+    
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "webserver"
+  }
+}
+
+
+resource "aws_security_group" "remote" {
+    
+    
+  name        = "remote"
+  description = "allow 22 only"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0"]
+  }
+  
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "remote"
+  }
+}
+
+
+
+resource "aws_instance" "tom" {
+    
+  ami                            = "ami-0a0ad6b70e61be944"
+  instance_type                  = "t2.micro"
+  associate_public_ip_address    = true
+  vpc_security_group_ids         = [ aws_security_group.webserver.id , aws_security_group.remote.id ] 
+  user_data                      = file("site.sh") # file function
+  key_name                       = aws_key_pair.j4utech.id
+  tags = {
+    Name = "tom_Server"
+  }
+  
+  lifecycle {
+      
+      create_before_destroy = true
+  }
+    
+}
